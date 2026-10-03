@@ -218,3 +218,14 @@
     gap: 16px;
   }
 }
+
+.viewControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.viewControls button {
+  white-space: nowrap;
+}
