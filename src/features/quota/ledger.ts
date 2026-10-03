@@ -200,11 +200,13 @@ export function ledgerMeters(
 }
 
 /**
- * Windows worth summing across accounts, headline first. Kimi's weekly row is
- * named 'summary' by buildKimiQuotaRows.
+ * Windows worth summing across accounts, headline first. Claude's headline is
+ * the account-wide weekly limit, which is what makes an account unavailable for
+ * routing; the model-specific Fable window stays secondary. Kimi's weekly row
+ * is named 'summary' by buildKimiQuotaRows.
  */
 export const SUMMARY_WINDOW_IDS: Record<QuotaProviderType, readonly string[]> = {
-  claude: ['seven-day-fable', 'seven-day'],
+  claude: ['seven-day', 'seven-day-fable'],
   codex: ['weekly', 'monthly'],
   xai: ['weekly', 'monthly'],
   kimi: ['summary', 'monthly'],

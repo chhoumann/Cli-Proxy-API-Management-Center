@@ -93,14 +93,14 @@ describe('summarizeLedger', () => {
   test('sums the rounded row percentages of every Claude account into the headline', () => {
     const [headline, secondary, ...rest] = summarizeLedger('claude', claudeAccounts, NOW);
 
-    expect(headline.id).toBe('seven-day-fable');
-    expect(headline.remaining).toBe(409);
+    expect(headline.id).toBe('seven-day');
+    expect(headline.remaining).toBe(454);
     expect(headline.capacity).toBe(500);
     expect(headline.segments.map((value) => Math.round(value ?? -1))).toEqual([
-      58, 100, 100, 51, 100,
+      79, 100, 100, 75, 100,
     ]);
-    expect(secondary.id).toBe('seven-day');
-    expect(secondary.remaining).toBe(454);
+    expect(secondary.id).toBe('seven-day-fable');
+    expect(secondary.remaining).toBe(409);
     expect(secondary.capacity).toBe(500);
     expect(rest).toEqual([]);
   });
@@ -185,7 +185,7 @@ describe('summarizeLedger', () => {
     ]);
   });
 
-  test('falls back to the 7-day window as the Claude headline when no account has Fable', () => {
+  test('keeps the weekly headline and omits the Fable window when no account has it', () => {
     const accounts = [
       ledgerMeters(
         'claude',
@@ -245,10 +245,10 @@ describe('ledgerColumns', () => {
     );
     const summary = summarizeLedger('claude', [meters], NOW);
     expect(ledgerColumns([meters], summary)).toEqual([
-      'seven-day-fable',
+      'seven-day',
       'five-hour',
       'seven-day-sonnet',
-      'seven-day',
+      'seven-day-fable',
     ]);
   });
 
@@ -272,9 +272,9 @@ describe('ledgerColumns', () => {
     );
     const accounts = [withoutFable, withFable];
     expect(ledgerColumns(accounts, summarizeLedger('claude', accounts, NOW))).toEqual([
-      'seven-day-fable',
-      'five-hour',
       'seven-day',
+      'five-hour',
+      'seven-day-fable',
     ]);
   });
 });
@@ -289,9 +289,11 @@ describe('headlineRemaining', () => {
       ]),
       t
     );
-    const withoutFable = ledgerMeters('claude', claude([['seven-day', 10, null]]), t);
-    expect(headlineRemaining('claude', withFable)).toBe(30);
-    expect(headlineRemaining('claude', withoutFable)).toBe(90);
+    const withoutFable = ledgerMeters('claude', claude([['seven-day', 40, null]]), t);
+    const fableOnly = ledgerMeters('claude', claude([['seven-day-fable', 70, null]]), t);
+    expect(headlineRemaining('claude', withFable)).toBe(90);
+    expect(headlineRemaining('claude', withoutFable)).toBe(60);
+    expect(headlineRemaining('claude', fableOnly)).toBe(30);
     expect(headlineRemaining('claude', [])).toBeNull();
   });
 });
