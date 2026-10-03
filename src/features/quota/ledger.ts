@@ -332,14 +332,14 @@ export function codexManualResets(quota: QuotaCardState | undefined): LedgerManu
   if (available === null) return null;
 
   let next: LedgerManualResets['next'] = null;
-  (codex.rateLimitResetCredits ?? []).forEach((credit, index) => {
-    if (credit.status !== 'available') return;
+  for (const [index, credit] of (codex.rateLimitResetCredits ?? []).entries()) {
+    if (credit.status !== 'available') continue;
     const expiresAtMs = parseIsoToMs(credit.expiresAt);
     const sooner =
       next === null ||
       (expiresAtMs !== null && (next.expiresAtMs === null || expiresAtMs < next.expiresAtMs));
     if (sooner) next = { number: index + 1, expiresAtMs, expiresLabel: credit.expiresAt };
-  });
+  }
   return { available, next };
 }
 

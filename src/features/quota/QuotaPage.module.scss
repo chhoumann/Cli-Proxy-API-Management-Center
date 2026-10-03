@@ -21,9 +21,6 @@
   min-width: 0;
 }
 
-/* Provider tabs keep their native horizontal scroll; the view selects sit at
- * the right and wrap below the tabs on mobile. */
-
 .tabsRow {
   display: flex;
   align-items: center;
@@ -45,7 +42,7 @@
 }
 
 .sortSelect {
-  width: 156px;
+  width: 148px;
 }
 
 .layoutSelect {

@@ -79,7 +79,7 @@ export function QuotaPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [layout, setLayout] = useState<QuotaLayout>(() => readQuotaUiState()?.layout ?? 'ledger');
-  // Session only and never persisted: emails stay masked whenever the page is reopened.
+  // Never persisted, so emails are masked again whenever the page is reopened.
   const [showEmails, setShowEmails] = useState(false);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
@@ -369,15 +369,6 @@ export function QuotaPage() {
           />
           <div className={styles.viewControls}>
             <Select
-              value={sortMode}
-              options={sortOptions}
-              onChange={handleSortModeChange}
-              ariaLabel={t('quota_management.sort_label')}
-              size="sm"
-              fullWidth={false}
-              className={styles.sortSelect}
-            />
-            <Select
               value={layout}
               options={layoutOptions}
               onChange={handleLayoutChange}
@@ -385,6 +376,15 @@ export function QuotaPage() {
               size="sm"
               fullWidth={false}
               className={styles.layoutSelect}
+            />
+            <Select
+              value={sortMode}
+              options={sortOptions}
+              onChange={handleSortModeChange}
+              ariaLabel={t('quota_management.sort_label')}
+              size="sm"
+              fullWidth={false}
+              className={styles.sortSelect}
             />
           </div>
         </div>

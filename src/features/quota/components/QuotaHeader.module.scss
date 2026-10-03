@@ -172,17 +172,16 @@
   }
 }
 
-/* Outlined pill: same height and radius as the refresh pill, lower emphasis. */
 .secondaryAction {
   display: inline-flex;
   align-items: center;
-  height: 34px;
-  padding: 0 17px;
+  height: 32px;
+  padding: 0 13px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   border-radius: $radius-full;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 13.5px;
+  color: var(--text-primary);
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;

@@ -11,7 +11,6 @@ export type QuotaHeaderProps = {
   refreshing: boolean;
   disableControls: boolean;
   onRefreshAll: () => void;
-  /** Rendered before the refresh pill. */
   actions?: ReactNode;
 };
 
