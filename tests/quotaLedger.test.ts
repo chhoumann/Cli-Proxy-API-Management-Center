@@ -12,7 +12,7 @@ import {
   headlineRemaining,
   ledgerMeters,
   maskCredentialName,
-  orderLedgerMeters,
+  ledgerColumns,
   remainingFromUsed,
   summarizeLedger,
 } from '../src/features/quota/ledger';
@@ -129,6 +129,18 @@ describe('summarizeLedger', () => {
     expect(weekly.nextResetAtMs).toBe(NOW + 54 * HOUR);
   });
 
+  test('heads a Codex team account with its monthly window, not its 5-hour window', () => {
+    const team = {
+      status: 'success',
+      windows: [
+        { id: 'five-hour', label: '5h', usedPercent: 10, resetLabel: '-', resetAtMs: null },
+        { id: 'monthly', label: 'month', usedPercent: 70, resetLabel: '-', resetAtMs: null },
+      ],
+    } satisfies CodexQuotaState;
+    const [headline] = summarizeLedger('codex', [ledgerMeters('codex', team, t)], NOW);
+    expect(headline).toMatchObject({ id: 'monthly', remaining: 30, capacity: 100 });
+  });
+
   test('counts unloaded accounts in capacity but never in the sum', () => {
     const accounts = [
       ledgerMeters('codex', codex(40, NOW + HOUR), t),
@@ -219,7 +231,7 @@ describe('summarizeLedger', () => {
   });
 });
 
-describe('orderLedgerMeters', () => {
+describe('ledgerColumns', () => {
   test('puts the headline first and the secondary summed window last', () => {
     const meters = ledgerMeters(
       'claude',
@@ -232,10 +244,36 @@ describe('orderLedgerMeters', () => {
       t
     );
     const summary = summarizeLedger('claude', [meters], NOW);
-    expect(orderLedgerMeters(meters, summary).map((meter) => meter.id)).toEqual([
+    expect(ledgerColumns([meters], summary)).toEqual([
       'seven-day-fable',
       'five-hour',
       'seven-day-sonnet',
+      'seven-day',
+    ]);
+  });
+
+  test('keeps the Fable column for every row when one account lacks that window', () => {
+    const withFable = ledgerMeters(
+      'claude',
+      claude([
+        ['five-hour', 17, null],
+        ['seven-day', 79, null],
+        ['seven-day-fable', 0, null],
+      ]),
+      t
+    );
+    const withoutFable = ledgerMeters(
+      'claude',
+      claude([
+        ['five-hour', 0, null],
+        ['seven-day', 100, null],
+      ]),
+      t
+    );
+    const accounts = [withoutFable, withFable];
+    expect(ledgerColumns(accounts, summarizeLedger('claude', accounts, NOW))).toEqual([
+      'seven-day-fable',
+      'five-hour',
       'seven-day',
     ]);
   });

@@ -28,10 +28,10 @@ import {
 import { QUOTA_TAB_ORDER } from '../constants';
 import {
   codexManualResets,
+  ledgerColumns,
   ledgerMeters,
   ledgerPlan,
   maskCredentialName,
-  orderLedgerMeters,
   summarizeLedger,
   type LedgerMeter,
   type LedgerSummaryWindow,
@@ -81,17 +81,11 @@ export function QuotaLedger(props: QuotaLedgerProps) {
   const now = useNow();
 
   const summaries = new Map(
-    groupByProvider(summaryEntries).map(({ type, entries: group }) => [
-      type,
-      {
-        accounts: group.length,
-        windows: summarizeLedger(
-          type,
-          group.map((entry) => ledgerMeters(type, quotaFor(entry), t)),
-          now
-        ),
-      },
-    ])
+    groupByProvider(summaryEntries).map(({ type, entries: group }) => {
+      const accounts = group.map((entry) => ledgerMeters(type, quotaFor(entry), t));
+      const windows = summarizeLedger(type, accounts, now);
+      return [type, { accounts: group.length, windows, columns: ledgerColumns(accounts, windows) }];
+    })
   );
 
   return (
@@ -125,6 +119,7 @@ export function QuotaLedger(props: QuotaLedgerProps) {
                 entry={entry}
                 quota={quotaFor(entry)}
                 summary={summaries.get(group.type)?.windows ?? []}
+                columns={summaries.get(group.type)?.columns ?? []}
                 showEmails={showEmails}
                 canRefresh={props.canRefresh && !entry.file.disabled}
                 resetting={props.resettingName === key}
@@ -187,7 +182,8 @@ function SummaryCell(props: {
           {t('quota_management.meta_credentials', { count: accounts })}
         </span>
       </header>
-      {headline && <div className={styles.headlineLabel}>{headline.label}</div>}
+      {/* A non-breaking space keeps unloaded cells as tall as loaded ones. */}
+      <div className={styles.headlineLabel}>{headline?.label ?? '\u00a0'}</div>
       <div className={styles.headlineValue}>
         <span className={styles.headlineNumber}>{formatPercent(headline?.remaining ?? null)}</span>
         <span className={styles.headlineCapacity}>
@@ -286,6 +282,7 @@ type LedgerRowProps = {
   entry: QuotaFileEntry;
   quota: QuotaCardState | undefined;
   summary: readonly LedgerSummaryWindow[];
+  columns: readonly string[];
   showEmails: boolean;
   canRefresh: boolean;
   resetting: boolean;
@@ -295,8 +292,18 @@ type LedgerRowProps = {
 };
 
 function LedgerRow(props: LedgerRowProps) {
-  const { entry, quota, summary, showEmails, canRefresh, resetting, now, onRefresh, onReset } =
-    props;
+  const {
+    entry,
+    quota,
+    summary,
+    columns,
+    showEmails,
+    canRefresh,
+    resetting,
+    now,
+    onRefresh,
+    onReset,
+  } = props;
   const { t, i18n } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
@@ -312,7 +319,7 @@ function LedgerRow(props: LedgerRowProps) {
 
   const displayName = getQuotaDisplayName(file);
   const name = showEmails ? displayName : maskCredentialName(displayName, entry.type);
-  const meters = orderLedgerMeters(ledgerMeters(entry.type, quota, t), summary);
+  const meters = new Map(ledgerMeters(entry.type, quota, t).map((meter) => [meter.id, meter]));
   const secondaryIds = new Set(summary.slice(1).map((window) => window.id));
   const codexResets = entry.type === 'codex' ? codexManualResets(quota) : null;
   const showClaudeResets =
@@ -354,17 +361,22 @@ function LedgerRow(props: LedgerRowProps) {
               ),
             })}
           </span>
-        ) : meters.length === 0 && !codexResets ? (
+        ) : meters.size === 0 && !codexResets ? (
           <span className={styles.statusText}>{t('quota_management.ledger_no_windows')}</span>
         ) : (
-          meters.map((meter) => (
-            <Meter
-              key={meter.id}
-              meter={meter}
-              secondary={secondaryIds.has(meter.id)}
-              reset={buildResetDisplay(meter.resetLabel, meter.resetAtMs, now, locale)}
-            />
-          ))
+          columns.map((id) => {
+            const meter = meters.get(id);
+            return meter ? (
+              <Meter
+                key={id}
+                meter={meter}
+                secondary={secondaryIds.has(id)}
+                reset={buildResetDisplay(meter.resetLabel, meter.resetAtMs, now, locale)}
+              />
+            ) : (
+              <div key={id} className={styles.meter} aria-hidden="true" />
+            );
+          })
         )}
         {codexResets && (
           <ManualResets
@@ -437,10 +449,11 @@ function IdentityDetails(props: {
   const { entry, quota, now } = props;
   const { t, i18n } = useTranslation();
   const plan = ledgerPlan(entry.type, quota, t);
-  const parts: ReactNode[] = [];
+  const planParts: ReactNode[] = [];
+  const routingParts: ReactNode[] = [];
 
   if (plan && plan.renewsAtMs !== null) {
-    parts.push(
+    planParts.push(
       <span key="plan" className={styles.planStrong}>
         {plan.label}
       </span>,
@@ -453,22 +466,27 @@ function IdentityDetails(props: {
       </span>
     );
   } else if (plan) {
-    parts.push(<span key="plan">{plan.label}</span>);
+    planParts.push(<span key="plan">{plan.label}</span>);
   }
   if (Number.isSafeInteger(entry.file.priority)) {
-    parts.push(
+    routingParts.push(
       <span key="priority">{`${t('auth_files.priority_display')} ${entry.file.priority}`}</span>
     );
   }
   if (entry.file.websockets === true) {
-    parts.push(<span key="websockets">{t('providersPage.table.websocketsTag')}</span>);
+    routingParts.push(<span key="websockets">{t('providersPage.table.websocketsTag')}</span>);
   }
 
-  if (parts.length === 0) return null;
   return (
-    <div className={styles.details}>
-      {parts.flatMap((part, index) => (index === 0 ? [part] : [' · ', part]))}
-    </div>
+    <>
+      {[planParts, routingParts]
+        .filter((parts) => parts.length > 0)
+        .map((parts, line) => (
+          <div key={line} className={styles.details}>
+            {parts.flatMap((part, index) => (index === 0 ? [part] : [' · ', part]))}
+          </div>
+        ))}
+    </>
   );
 }
 

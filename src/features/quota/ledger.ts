@@ -205,7 +205,7 @@ export function ledgerMeters(
  */
 export const SUMMARY_WINDOW_IDS: Record<QuotaProviderType, readonly string[]> = {
   claude: ['seven-day-fable', 'seven-day'],
-  codex: ['weekly'],
+  codex: ['weekly', 'monthly'],
   xai: ['weekly', 'monthly'],
   kimi: ['summary', 'monthly'],
   devin: ['weekly'],
@@ -255,17 +255,23 @@ export function summarizeLedger(
   });
 }
 
-/** Headline first, then windows that are not summed, then the secondary summed windows. */
-export function orderLedgerMeters(
-  meters: readonly LedgerMeter[],
+/**
+ * Column order shared by every row of a provider: each window any account
+ * reports, headline first, then windows that are not summed, then the
+ * secondary summed windows. A row missing a window leaves its column empty, so
+ * the same window always lines up down the group.
+ */
+export function ledgerColumns(
+  accounts: readonly LedgerMeter[][],
   summary: readonly LedgerSummaryWindow[]
-): LedgerMeter[] {
+): string[] {
+  const ids = [...new Set(accounts.flatMap((meters) => meters.map((meter) => meter.id)))];
   const summaryIds = summary.map((window) => window.id);
   const [headlineId, ...secondaryIds] = summaryIds;
   return [
-    ...meters.filter((meter) => meter.id === headlineId),
-    ...meters.filter((meter) => !summaryIds.includes(meter.id)),
-    ...secondaryIds.flatMap((id) => meters.filter((meter) => meter.id === id)),
+    ...ids.filter((id) => id === headlineId),
+    ...ids.filter((id) => !summaryIds.includes(id)),
+    ...secondaryIds.filter((id) => ids.includes(id)),
   ];
 }
 
