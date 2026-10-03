@@ -24,6 +24,7 @@ import {
   normalizeNumberValue,
   normalizePlanType,
   normalizeStringValue,
+  PREMIUM_CODEX_PLAN_TYPES,
   normalizeCodexResetCreditsPayload,
   parseCodexUsagePayload,
   parseOffsetSecondsToMs,
@@ -41,6 +42,21 @@ import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
 
 const CODEX_OPTIONAL_REQUEST_TIMEOUT_MS = 8000;
+
+export const codexPlanLabel = (
+  planType: string | null | undefined,
+  t: TFunction
+): string | null => {
+  const normalized = normalizePlanType(planType);
+  if (!normalized) return null;
+  if (normalized === 'self_serve_business_prolite') return t('codex_quota.plan_business_premium');
+  if (normalized === 'pro') return t('codex_quota.plan_pro');
+  if (PREMIUM_CODEX_PLAN_TYPES.has(normalized)) return t('codex_quota.plan_prolite');
+  if (normalized === 'plus') return t('codex_quota.plan_plus');
+  if (normalized === 'team') return t('codex_quota.plan_team');
+  if (normalized === 'free') return t('codex_quota.plan_free');
+  return planType || normalized;
+};
 
 type CodexResetCreditsData = {
   availableCount: number | null;
