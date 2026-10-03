@@ -78,17 +78,18 @@ export function filterEntriesBySearch(entries: QuotaFileEntry[], search: string)
 }
 
 /**
- * Order the grid by whichever credential recovers first.
+ * Order credentials by a per-entry key: ascending for 'soonest' (the instant
+ * capacity comes back), descending for 'remaining' (the headline percent left).
  *
- * The instant is injected rather than read here: quota lives in the store and
+ * The key is injected rather than read here: quota lives in the store and
  * arrives asynchronously, and keeping this function store-free is what makes
  * the ordering rules directly testable.
  *
- * Credentials with no instant — not loaded yet, failed, or reporting no
- * upcoming reset — sink to the bottom rather than sorting as "now". They keep
- * their incoming provider-grouped order, so the unloaded tail still reads like
- * the default view instead of an arbitrary shuffle. Because loading is
- * click-to-fetch, that tail is most of the list until the user asks for data.
+ * Credentials with no key (not loaded yet, failed, or nothing pending) sink to
+ * the bottom rather than sorting as "now" or as 0%. They keep their incoming
+ * provider-grouped order, so the unloaded tail still reads like the default
+ * view instead of an arbitrary shuffle. Because loading is click-to-fetch,
+ * that tail is most of the list until the user asks for data.
  *
  * The original index is the final tiebreak, making stability an asserted
  * property rather than an assumption about the engine's sort.
@@ -96,18 +97,19 @@ export function filterEntriesBySearch(entries: QuotaFileEntry[], search: string)
 export function sortQuotaEntries(
   entries: QuotaFileEntry[],
   mode: QuotaSortMode,
-  resolveNextRecoveryMs: (entry: QuotaFileEntry) => number | null
+  sortKeyFor: (entry: QuotaFileEntry) => number | null
 ): QuotaFileEntry[] {
-  if (mode !== 'soonest') return [...entries];
+  if (mode === 'default') return [...entries];
+  const direction = mode === 'soonest' ? 1 : -1;
 
-  // Decorate once — resolving pokes at provider-shaped state per entry.
+  // Decorate once: resolving pokes at provider-shaped state per entry.
   return entries
-    .map((entry, index) => ({ entry, index, atMs: resolveNextRecoveryMs(entry) }))
+    .map((entry, index) => ({ entry, index, key: sortKeyFor(entry) }))
     .sort((a, b) => {
-      if (a.atMs === null && b.atMs === null) return a.index - b.index;
-      if (a.atMs === null) return 1;
-      if (b.atMs === null) return -1;
-      return a.atMs - b.atMs || a.index - b.index;
+      if (a.key === null && b.key === null) return a.index - b.index;
+      if (a.key === null) return 1;
+      if (b.key === null) return -1;
+      return direction * (a.key - b.key) || a.index - b.index;
     })
     .map((decorated) => decorated.entry);
 }

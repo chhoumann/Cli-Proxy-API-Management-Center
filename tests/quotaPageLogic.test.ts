@@ -244,6 +244,44 @@ describe('sortQuotaEntries', () => {
     expect(input).toEqual(entries);
   });
 
+  test('remaining mode puts the most quota left first, across providers', () => {
+    const sorted = sortQuotaEntries(
+      entries,
+      'remaining',
+      resolver({
+        'claude-a.json': 40,
+        'codex-a.json': 100,
+        'codex-b.json': 0,
+        'grok-a.json': 75,
+        'kimi-a.json': 41,
+      })
+    );
+    expect(byName(sorted)).toEqual([
+      'codex-a.json',
+      'grok-a.json',
+      'kimi-a.json',
+      'claude-a.json',
+      'codex-b.json',
+    ]);
+  });
+
+  test('remaining mode sinks unknown quota below an exhausted account', () => {
+    // claude-a precedes codex-b in the incoming order, so reading unknown as
+    // 0% would tie it with codex-b and keep it in front.
+    const sorted = sortQuotaEntries(entries, 'remaining', resolver({ 'codex-b.json': 0 }));
+    expect(byName(sorted)).toEqual([
+      'codex-b.json',
+      'claude-a.json',
+      'codex-a.json',
+      'grok-a.json',
+      'kimi-a.json',
+    ]);
+  });
+
+  test('remaining mode keeps equal percentages in their original order', () => {
+    expect(byName(sortQuotaEntries(entries, 'remaining', () => 50))).toEqual(byName(entries));
+  });
+
   test('sorts before paginating, so the globally soonest lands on page one', () => {
     // Last in the default order, first to recover.
     const last = entries[entries.length - 1].file.name;

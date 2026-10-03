@@ -1,0 +1,504 @@
+@use '../../../styles/mixins' as *;
+
+/* Ledger layout. Hairlines use --bg-tertiary, quieter than --border-color, so
+ * dozens of rows read as one table rather than a stack of boxes. */
+
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+}
+
+/* ---------- Summary strip ----------
+ * The 1px grid gap over a --bg-tertiary panel draws every divider, so wrapped
+ * cells keep correct vertical and horizontal rules without edge cases. */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 13px 16px 16px;
+  background: var(--bg-quinary);
+}
+
+.cellHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 20px;
+}
+
+.iconWrap {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
+}
+
+.icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.iconFallback {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cellName {
+  @include text-ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cellCount {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--text-quaternary);
+  white-space: nowrap;
+}
+
+.headlineLabel {
+  @include text-ellipsis;
+  margin-top: 11px;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--text-tertiary);
+}
+
+.headlineValue {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 3px;
+  min-width: 0;
+}
+
+.headlineNumber {
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.headlineCapacity {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.segments {
+  display: flex;
+  gap: 3px;
+  margin-top: 12px;
+
+  .track {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.summaryReset {
+  margin-top: 10px;
+}
+
+.secondary {
+  display: flex;
+  flex-direction: column;
+  margin-top: 13px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bg-tertiary);
+}
+
+.secondaryLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 16px;
+}
+
+.secondaryLabel {
+  @include text-ellipsis;
+  color: var(--text-tertiary);
+}
+
+.secondaryValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.secondaryToggle {
+  @include button-reset;
+  margin-left: auto;
+  font: inherit;
+  color: var(--text-quaternary);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ---------- Bars (summary segments and row meters share the track) ---------- */
+
+.track,
+.bar {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: $radius-full;
+  transition: width 360ms var(--ease-out-strong, ease);
+}
+
+.fillHigh {
+  background: var(--viz-success);
+}
+
+.fillMedium {
+  background: var(--quota-medium-color);
+}
+
+.fillLow {
+  background: var(--viz-failure);
+}
+
+.reset {
+  @include text-ellipsis;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--text-quaternary);
+}
+
+.resetRelative {
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.secondary .segments {
+  margin-top: 10px;
+}
+
+/* ---------- Provider groups and rows ---------- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+.groupCount {
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quaternary);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(180px, 250px) minmax(0, 1fr) auto;
+  column-gap: 24px;
+  align-items: center;
+  min-width: 0;
+  padding: 13px 0 12px;
+  border-bottom: 1px solid var(--bg-tertiary);
+  transition: background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: color-mix(in srgb, var(--bg-tertiary) 35%, transparent);
+  }
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.name {
+  @include text-ellipsis;
+  font-family: $font-mono;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--text-primary);
+}
+
+.details {
+  @include text-ellipsis;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--text-tertiary);
+}
+
+.planStrong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detailStrong {
+  color: var(--text-secondary);
+}
+
+.unavailable {
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--danger-color);
+}
+
+.meters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 22px;
+  min-width: 0;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  width: 163px;
+  min-width: 0;
+
+  .bar {
+    margin-top: 6px;
+  }
+
+  .bar + .reset {
+    margin-top: 5px;
+  }
+}
+
+.meterSecondary {
+  opacity: 0.55;
+}
+
+.meterHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  line-height: 18px;
+}
+
+.meterLabel {
+  @include text-ellipsis;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.meterPercent {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.available {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-tertiary);
+
+  + .reset,
+  + .manualMessage {
+    margin-top: 5px;
+  }
+}
+
+.availableCount {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.manualMessage {
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--danger-color);
+}
+
+.statusText {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-tertiary);
+}
+
+.errorText {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--danger-color);
+  overflow-wrap: anywhere;
+}
+
+.idle {
+  @include button-reset;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  padding-right: 8px;
+}
+
+.action {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-quaternary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .action:hover:not(:disabled),
+  .idle:hover:not(:disabled),
+  .secondaryToggle:hover {
+    color: var(--text-primary);
+  }
+}
+
+.spinning {
+  animation: ledger-spin 0.8s linear infinite;
+}
+
+@keyframes ledger-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@include mobile {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+  }
+
+  .meters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .meter {
+    width: auto;
+  }
+
+  .meters > .statusText,
+  .meters > .errorText,
+  .meters > .idle {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+    padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .fill,
+  .action {
+    transition: none;
+  }
+
+  .spinning {
+    animation: none;
+  }
+}

@@ -23,8 +23,8 @@ describe('provider filter overflow', () => {
     expect(source).toContain("strip.removeEventListener('wheel', onWheel)");
   });
 
-  test('allocates remaining quota toolbar width without shrinking the sort control', () => {
+  test('gives the tabs the remaining width without shrinking the view controls', () => {
     expect(quotaStyles).toMatch(/> :first-child\s*\{\s*flex: 1 1 auto;\s*min-width: 0;/);
-    expect(quotaStyles).toMatch(/\.sort\s*\{\s*flex: 0 0 auto;/);
+    expect(quotaStyles).toMatch(/\.viewControls\s*\{[^}]*flex-shrink: 0;/);
   });
 });
