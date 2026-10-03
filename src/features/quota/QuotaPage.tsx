@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconSearch, IconX } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
@@ -23,7 +22,7 @@ import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
-import { QuotaHeader } from './components/QuotaHeader';
+import { QuotaHeader, QuotaHeaderSearch, QuotaHeaderToggle } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
 import { QuotaLedger } from './components/QuotaLedger';
 import { QuotaTimeline } from './components/QuotaTimeline';
@@ -32,6 +31,7 @@ import {
   QUOTA_PAGE_SIZE,
   QUOTA_SORT_MODES,
   QUOTA_TAB_ORDER,
+  type QuotaLayout,
   type QuotaSortMode,
   type QuotaTabId,
 } from './constants';
@@ -78,9 +78,9 @@ export function QuotaPage() {
   );
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [layout, setLayout] = useState<'ledger' | 'cards'>('ledger');
+  const [layout, setLayout] = useState<QuotaLayout>(() => readQuotaUiState()?.layout ?? 'ledger');
+  // Session only and never persisted: emails stay masked whenever the page is reopened.
   const [showEmails, setShowEmails] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -207,9 +207,22 @@ export function QuotaPage() {
     writeQuotaUiState({ sortMode: next as QuotaSortMode });
   }, []);
 
+  const handleLayoutChange = useCallback((next: string) => {
+    setLayout(next as QuotaLayout);
+    writeQuotaUiState({ layout: next as QuotaLayout });
+  }, []);
+
   const sortOptions = useMemo(
     () =>
       QUOTA_SORT_MODES.map((mode) => ({ value: mode, label: t(`quota_management.sort_${mode}`) })),
+    [t]
+  );
+
+  const layoutOptions = useMemo(
+    () => [
+      { value: 'ledger', label: t('quota_management.ledger_view') },
+      { value: 'cards', label: t('quota_management.ledger_cards') },
+    ],
     [t]
   );
 
@@ -329,10 +342,23 @@ export function QuotaPage() {
         refreshing={loading || batchLoading}
         disableControls={disableControls}
         onRefreshAll={handleRefreshAll}
+        actions={
+          <>
+            <QuotaHeaderSearch value={search} onChange={handleSearchChange} />
+            {layout === 'ledger' && (
+              <QuotaHeaderToggle pressed={showEmails} onToggle={() => setShowEmails(!showEmails)}>
+                {t(
+                  showEmails
+                    ? 'quota_management.ledger_hide_emails'
+                    : 'quota_management.ledger_show_emails'
+                )}
+              </QuotaHeaderToggle>
+            )}
+          </>
+        }
       />
 
       <section className={styles.workbench}>
-        {/* 提供商导航与搜索工具栏分层，避免不同控件争夺视觉焦点。 */}
         <div className={styles.tabsRow} data-reveal>
           <ProviderTabs
             types={TAB_IDS}
@@ -341,65 +367,24 @@ export function QuotaPage() {
             resolvedTheme={resolvedTheme}
             onChange={handleTabChange}
           />
-        </div>
-
-        <div className={styles.toolbar}>
-          <div className={styles.search}>
-            <IconSearch size={16} className={styles.searchIcon} aria-hidden="true" />
-            <input
-              ref={searchInputRef}
-              className={styles.searchInput}
-              type="search"
-              value={search}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder={t('quota_management.search_placeholder')}
-              aria-label={t('quota_management.search_label')}
-            />
-            {search && (
-              <button
-                type="button"
-                className={styles.clearSearch}
-                aria-label={t('quota_management.search_clear')}
-                title={t('quota_management.search_clear')}
-                onClick={() => {
-                  handleSearchChange('');
-                  searchInputRef.current?.focus();
-                }}
-              >
-                <IconX size={14} aria-hidden="true" />
-              </button>
-            )}
-          </div>
           <div className={styles.viewControls}>
-            {layout === 'ledger' && (
-              <Button variant="secondary" size="sm" onClick={() => setShowEmails(!showEmails)}>
-                {t(
-                  showEmails
-                    ? 'quota_management.ledger_hide_emails'
-                    : 'quota_management.ledger_show_emails'
-                )}
-              </Button>
-            )}
-            <Select
-              value={layout}
-              size="sm"
-              ariaLabel={t('quota_management.ledger_layout')}
-              options={[
-                { value: 'ledger', label: t('quota_management.ledger_view') },
-                { value: 'cards', label: t('quota_management.ledger_cards') },
-              ]}
-              onChange={(value) => {
-                if (value === 'ledger' || value === 'cards') setLayout(value);
-              }}
-            />
-          </div>
-          <div className={styles.sort}>
             <Select
               value={sortMode}
               options={sortOptions}
               onChange={handleSortModeChange}
               ariaLabel={t('quota_management.sort_label')}
               size="sm"
+              fullWidth={false}
+              className={styles.sortSelect}
+            />
+            <Select
+              value={layout}
+              options={layoutOptions}
+              onChange={handleLayoutChange}
+              ariaLabel={t('quota_management.ledger_layout')}
+              size="sm"
+              fullWidth={false}
+              className={styles.layoutSelect}
             />
           </div>
         </div>
@@ -411,10 +396,17 @@ export function QuotaPage() {
         )}
 
         {loading ? (
-          <div className={styles.grid} aria-hidden="true">
-            {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-              <Skeleton key={index} height={168} rounded={14} />
-            ))}
+          <div
+            className={layout === 'ledger' ? styles.ledgerSkeleton : styles.grid}
+            aria-hidden="true"
+          >
+            {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) =>
+              layout === 'ledger' ? (
+                <Skeleton key={index} height={56} rounded={10} />
+              ) : (
+                <Skeleton key={index} height={168} rounded={14} />
+              )
+            )}
           </div>
         ) : isEmpty ? (
           <EmptyState
