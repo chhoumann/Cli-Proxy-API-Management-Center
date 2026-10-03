@@ -45,6 +45,7 @@ import {
   sortQuotaEntries,
   type QuotaFileEntry,
 } from './logic';
+import { headlineRemaining, ledgerMeters } from './ledger';
 import { nextRecoveryMs } from './resetSchedule';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers';
 import type { QuotaProviderType } from './providers/types';
@@ -73,7 +74,7 @@ export function QuotaPage() {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<QuotaTabId>(() => readQuotaUiState()?.tab ?? 'all');
   const [sortMode, setSortMode] = useState<QuotaSortMode>(
-    () => readQuotaUiState()?.sortMode ?? 'default'
+    () => readQuotaUiState()?.sortMode ?? 'remaining'
   );
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -159,10 +160,11 @@ export function QuotaPage() {
 
   /* ---------- 归类 / 过滤 / 排序 / 分页 ---------- */
 
-  // 只在「最快恢复优先」下订阅分钟时钟。默认序下不门控的话，pageItems 每分钟
-  // 换一次身份，会反复空转下面那个「刷新全部」的 loading 下降沿 effect。
-  const tick = useNow(sortMode !== 'default');
-  const sortNow = sortMode === 'default' ? 0 : tick;
+  // Only the soonest-recovery order depends on the clock. Ungated, pageItems
+  // would change identity every minute and keep re-running the refresh-all
+  // loading edge effect below.
+  const tick = useNow(sortMode === 'soonest');
+  const sortNow = sortMode === 'soonest' ? tick : 0;
 
   const entries = useMemo(() => classifyQuotaFiles(files), [files]);
   const tabCounts = useMemo(() => buildTabCounts(entries), [entries]);
@@ -175,14 +177,17 @@ export function QuotaPage() {
     setPage(1);
   }, []);
 
-  const resolveNextRecovery = useCallback(
-    (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getQuota(entry), sortNow),
-    [getQuota, sortNow]
+  const sortKeyFor = useCallback(
+    (entry: QuotaFileEntry) =>
+      sortMode === 'soonest'
+        ? nextRecoveryMs(entry.type, getQuota(entry), sortNow)
+        : headlineRemaining(entry.type, ledgerMeters(entry.type, getQuota(entry), t)),
+    [getQuota, sortMode, sortNow, t]
   );
-  // 排序在分页之前：否则「最快恢复」只在当前页内成立。
+  // 排序在分页之前：否则排序只在当前页内成立。
   const sortedEntries = useMemo(
-    () => sortQuotaEntries(filteredEntries, sortMode, resolveNextRecovery),
-    [filteredEntries, sortMode, resolveNextRecovery]
+    () => sortQuotaEntries(filteredEntries, sortMode, sortKeyFor),
+    [filteredEntries, sortMode, sortKeyFor]
   );
 
   const { pageItems, currentPage, totalPages } = useMemo(

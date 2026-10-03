@@ -16,8 +16,11 @@ export type QuotaTabId = 'all' | QuotaProviderType;
 /** 页级分页固定 20/页，同时把「刷新全部」的上游并发限制在 20。 */
 export const QUOTA_PAGE_SIZE = 20;
 
-/** 卡片排序：默认 = provider 分组序；soonest = 最快恢复优先。 */
-export const QUOTA_SORT_MODES = ['default', 'soonest'] as const;
+/**
+ * Credential order. 'remaining' (the initial mode) puts the most headline quota
+ * left first, 'soonest' the earliest recovery, 'default' keeps provider order.
+ */
+export const QUOTA_SORT_MODES = ['remaining', 'soonest', 'default'] as const;
 
 export type QuotaSortMode = (typeof QUOTA_SORT_MODES)[number];
 
