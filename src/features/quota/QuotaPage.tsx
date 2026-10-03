@@ -25,6 +25,7 @@ import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
+import { QuotaLedger } from './components/QuotaLedger';
 import { QuotaTimeline } from './components/QuotaTimeline';
 import {
   CARD_ENTRANCE_BUDGET_MS,
@@ -76,6 +77,8 @@ export function QuotaPage() {
   );
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [layout, setLayout] = useState<'ledger' | 'cards'>('ledger');
+  const [showEmails, setShowEmails] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
@@ -362,6 +365,29 @@ export function QuotaPage() {
               </button>
             )}
           </div>
+          <div className={styles.viewControls}>
+            {layout === 'ledger' && (
+              <Button variant="secondary" size="sm" onClick={() => setShowEmails(!showEmails)}>
+                {t(
+                  showEmails
+                    ? 'quota_management.ledger_hide_emails'
+                    : 'quota_management.ledger_show_emails'
+                )}
+              </Button>
+            )}
+            <Select
+              value={layout}
+              size="sm"
+              ariaLabel={t('quota_management.ledger_layout')}
+              options={[
+                { value: 'ledger', label: t('quota_management.ledger_view') },
+                { value: 'cards', label: t('quota_management.ledger_cards') },
+              ]}
+              onChange={(value) => {
+                if (value === 'ledger' || value === 'cards') setLayout(value);
+              }}
+            />
+          </div>
           <div className={styles.sort}>
             <Select
               value={sortMode}
@@ -413,6 +439,17 @@ export function QuotaPage() {
               )
             }
           />
+        ) : layout === 'ledger' ? (
+          <QuotaLedger
+            entries={pageItems}
+            quotaFor={getQuota}
+            resolvedTheme={resolvedTheme}
+            showEmails={showEmails}
+            canRefresh={canUseActions}
+            resettingName={resettingQuotaName}
+            onRefresh={(entry) => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
+            onReset={(entry) => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
+          />
         ) : (
           <div className={styles.grid}>
             {pageItems.map((entry, index) => (
@@ -460,12 +497,14 @@ export function QuotaPage() {
         )}
 
         {/* 时间线只比较当前页凭证，避免大量凭证一次性生成无界泳道。 */}
-        <QuotaTimeline
-          entries={pageItems}
-          quotaFor={getQuota}
-          displayNameFor={displayNameFor}
-          resolvedTheme={resolvedTheme}
-        />
+        {layout === 'cards' && (
+          <QuotaTimeline
+            entries={pageItems}
+            quotaFor={getQuota}
+            displayNameFor={displayNameFor}
+            resolvedTheme={resolvedTheme}
+          />
+        )}
       </section>
     </div>
   );

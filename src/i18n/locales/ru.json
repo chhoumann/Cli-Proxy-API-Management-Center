@@ -1347,7 +1347,18 @@
     "weekday_wed": "Ср",
     "weekday_thu": "Чт",
     "weekday_fri": "Пт",
-    "weekday_sat": "Сб"
+    "weekday_sat": "Сб",
+    "ledger_weekly_remaining": "Остаток за неделю для всех моделей",
+    "ledger_sum_hint": "Сумма оставшихся процентов по аккаунтам, а не баланс токенов. Неизвестные значения не включены в сумму.",
+    "ledger_coverage": "Загружено {{loaded}} из {{total}} аккаунтов",
+    "ledger_no_reset": "Время сброса не указано",
+    "ledger_reset_credits": "Ручные сбросы",
+    "ledger_unavailable": "Недоступен для маршрутизации",
+    "ledger_show_emails": "Показать почту",
+    "ledger_hide_emails": "Скрыть почту",
+    "ledger_layout": "Вид квот",
+    "ledger_view": "Список",
+    "ledger_cards": "Карточки"
   },
   "plugin_management": {
     "title": "Управление плагинами",

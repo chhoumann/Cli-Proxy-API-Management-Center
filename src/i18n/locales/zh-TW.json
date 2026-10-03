@@ -1368,7 +1368,18 @@
     "weekday_wed": "三",
     "weekday_thu": "四",
     "weekday_fri": "五",
-    "weekday_sat": "六"
+    "weekday_sat": "六",
+    "ledger_weekly_remaining": "全模型每週剩餘額度",
+    "ledger_sum_hint": "各帳戶剩餘百分比總和，並非權杖餘額。未知帳戶不計入小計。",
+    "ledger_coverage": "已載入 {{loaded}} / {{total}} 個帳戶",
+    "ledger_no_reset": "未回報重設時間",
+    "ledger_reset_credits": "手動重設次數",
+    "ledger_unavailable": "目前無法路由",
+    "ledger_show_emails": "顯示信箱",
+    "ledger_hide_emails": "隱藏信箱",
+    "ledger_layout": "額度版面",
+    "ledger_view": "列表",
+    "ledger_cards": "卡片"
   },
   "plugin_management": {
     "title": "插件管理",

@@ -1344,7 +1344,18 @@
     "weekday_wed": "Wed",
     "weekday_thu": "Thu",
     "weekday_fri": "Fri",
-    "weekday_sat": "Sat"
+    "weekday_sat": "Sat",
+    "ledger_weekly_remaining": "All-model weekly remaining",
+    "ledger_sum_hint": "Sum of remaining percentages across accounts, not a token balance. Unknown accounts are excluded from the subtotal.",
+    "ledger_coverage": "{{loaded}} / {{total}} accounts loaded",
+    "ledger_no_reset": "No reset reported",
+    "ledger_reset_credits": "Manual resets",
+    "ledger_unavailable": "Unavailable for routing",
+    "ledger_show_emails": "Show emails",
+    "ledger_hide_emails": "Hide emails",
+    "ledger_layout": "Quota layout",
+    "ledger_view": "Ledger",
+    "ledger_cards": "Cards"
   },
   "plugin_management": {
     "title": "Plugin Management",
